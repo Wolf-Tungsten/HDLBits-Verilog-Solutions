@@ -51,7 +51,7 @@ module top_module(
             end
             if (train_valid && train_mispredicted) begin
                 GHR <= {train_history[5:0], train_taken};
-            end else if (!(train_valid && train_mispredicted) && predict_valid) begin
+            end else if (predict_valid) begin
                 GHR <= {GHR[5:0], predict_taken};
             end
         end
