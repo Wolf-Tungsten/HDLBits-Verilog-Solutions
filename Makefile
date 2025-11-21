@@ -2,8 +2,8 @@ VERILATOR ?= verilator
 VERILATOR_FLAGS ?= -Wall -Wno-DECLFILENAME --coverage
 DUT ?= 001
 TOP ?= top_module
-PREFIX ?= dut_$(DUT)
-MODEL := V$(PREFIX)
+PREFIX ?= Vdut_$(DUT)
+MODEL := $(PREFIX)
 
 BUILD_DIR := build
 COVERAGE_ROOT := coverage
