@@ -1,5 +1,6 @@
 VERILATOR ?= verilator
 VERILATOR_FLAGS ?= -Wall -Wno-DECLFILENAME --coverage
+export CCACHE_DISABLE ?= 1
 DUT ?= 001
 TOP ?= top_module
 PREFIX ?= Vdut_$(DUT)

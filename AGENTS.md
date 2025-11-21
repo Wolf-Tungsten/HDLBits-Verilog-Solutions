@@ -22,6 +22,7 @@
 - Use Verilator; add a `tb_###.cpp` per DUT and rely on `make run_tb DUT=###` to compile, run, and emit coverage via `VERILATOR_COV_FILE`.
 - Keep tests deterministic—no randomization or delays. When adding waveforms, gate tracing behind flags to keep default runs fast.
 - Always run with coverage (default behavior) and ensure failures exit non-zero with a concise reason.
+- Target 100% coverage: each input must toggle 0→1 and 1→0 (and relevant branches exercise accordingly) so Verilator reports 100% in `coverage/dut_##/coverage.info`.
 
 ## Commit & Pull Request Guidelines
 - Commit messages: short, imperative, and reference the exercise ID when possible (e.g., `add dut_042 mux tree` or `tb_010: add coverage check`).
