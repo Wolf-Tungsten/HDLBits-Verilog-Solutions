@@ -1,44 +1,42 @@
 VERILATOR ?= verilator
-VERILATOR_FLAGS ?= -Wall -Wno-DECLFILENAME
-VERILATOR_COVERAGE ?= 1
-
-ifeq ($(VERILATOR_COVERAGE),1)
-VERILATOR_FLAGS += --coverage
-endif
+VERILATOR_FLAGS ?= -Wall -Wno-DECLFILENAME --coverage
+DUT ?= 001
+TOP ?= top_module
+PREFIX ?= dut_$(DUT)
+MODEL := V$(PREFIX)
 
 BUILD_DIR := build
-TB_001_DIR := $(BUILD_DIR)/tb_001
-TB_001_BIN := $(TB_001_DIR)/Vtop_module
 COVERAGE_ROOT := coverage
-TB_001_COVERAGE_DIR := $(COVERAGE_ROOT)/dut_001
-TB_001_COVERAGE_DAT := $(TB_001_COVERAGE_DIR)/coverage.dat
-TB_001_COVERAGE_INFO := $(TB_001_COVERAGE_DIR)/coverage.info
-TB_001_COVERAGE_ANNOTATE_DIR := $(TB_001_COVERAGE_DIR)/annotate
+DUT_SRC := dut/dut_$(DUT).v
+TB_SRC := tb/tb_$(DUT).cpp
+BUILD_SUBDIR := $(BUILD_DIR)/tb_$(DUT)
+BIN := $(BUILD_SUBDIR)/V$(TOP)
+COV_DIR := $(COVERAGE_ROOT)/dut_$(DUT)
+COV_DAT := $(COV_DIR)/coverage.dat
+COV_INFO := $(COV_DIR)/coverage.info
+COV_ANNOTATE_DIR := $(COV_DIR)/annotate
 
-.PHONY: all run_tb_001 clean coverage_report
+.PHONY: all run_tb clean coverage_report
 
-all: run_tb_001
+all: run_tb
 
-$(TB_001_DIR):
+$(BUILD_SUBDIR):
 	@mkdir -p $@
 
-$(TB_001_BIN): dut/dut_001.v tb/tb_001.cpp | $(TB_001_DIR)
-	$(VERILATOR) $(VERILATOR_FLAGS) --cc dut/dut_001.v --exe tb/tb_001.cpp -o Vtop_module -Mdir $(TB_001_DIR)
-	$(MAKE) -C $(TB_001_DIR) -f Vdut_001.mk Vtop_module
+$(BIN): $(DUT_SRC) $(TB_SRC) | $(BUILD_SUBDIR)
+	$(VERILATOR) $(VERILATOR_FLAGS) --cc $(DUT_SRC) --exe $(TB_SRC) \
+		--top-module $(TOP) --prefix $(PREFIX) -o V$(TOP) -Mdir $(BUILD_SUBDIR)
+	$(MAKE) -C $(BUILD_SUBDIR) -f $(MODEL).mk V$(TOP)
 
-run_tb_001: $(TB_001_BIN)
-	@mkdir -p $(TB_001_COVERAGE_DIR)
-	VERILATOR_COV_FILE=$(TB_001_COVERAGE_DAT) ./$(TB_001_BIN)
-ifeq ($(VERILATOR_COVERAGE),1)
-	@if [ -f $(TB_001_COVERAGE_DAT) ]; then \
-		$(MAKE) coverage_report \
-			COV_DAT=$(TB_001_COVERAGE_DAT) \
-			COV_INFO=$(TB_001_COVERAGE_INFO) \
-			COV_ANNOTATE_DIR=$(TB_001_COVERAGE_ANNOTATE_DIR); \
-	else \
-		echo "[WARN] Coverage data missing; skipping report."; \
-	fi
-endif
+run_tb: $(BIN)
+	@mkdir -p $(COV_DIR)
+	@echo "[RUN] DUT=$(DUT)"
+	VERILATOR_COV_FILE=$(COV_DAT) ./$(BIN)
+	@test -f $(COV_DAT) || (echo "[ERROR] Coverage data missing for DUT $(DUT)" && exit 1)
+	$(MAKE) coverage_report \
+		COV_DAT=$(COV_DAT) \
+		COV_INFO=$(COV_INFO) \
+		COV_ANNOTATE_DIR=$(COV_ANNOTATE_DIR)
 
 coverage_report:
 	@if [ -z "$(COV_DAT)" ] || [ -z "$(COV_INFO)" ] || [ -z "$(COV_ANNOTATE_DIR)" ]; then \
