@@ -2,8 +2,8 @@ module top_module (
     input clk,
     input d, 
     input r,
-    output q
-	);
+    output reg q
+		);
     always@(posedge clk)begin
         if(r)
             q <= 0;
