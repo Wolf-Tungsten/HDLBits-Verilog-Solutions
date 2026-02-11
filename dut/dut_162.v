@@ -22,6 +22,7 @@ module top_module(
     wire [6:0] predict_index = predict_pc ^ GHR;
     
     always @(*) begin
+        $display("GHR in comb always: %h", GHR);
         if(predict_valid) begin
             predict_taken = (PHT[predict_index] >= WT);
             predict_history = GHR;
@@ -41,7 +42,9 @@ module top_module(
                 PHT[i] <= WNT;
         end
         else begin
+            $display("train_index in seq always: %h", train_index);
             if(train_valid) begin
+                $display("train_index in seq always when train_valid: %h", train_index);
                 case(PHT[train_index])
                     SNT: PHT[train_index] <= train_taken ? WNT : SNT;
                     WNT: PHT[train_index] <= train_taken ? WT : SNT;
