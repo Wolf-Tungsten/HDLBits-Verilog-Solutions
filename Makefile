@@ -14,7 +14,6 @@ MODEL := $(PREFIX)
 GRHSIM_TOP ?= $(TOP)
 GRHSIM_PREFIX := grhsim_$(GRHSIM_TOP)
 GRHSIM_SCRIPT ?= ../../scripts/wolvrix_hdlbits_grhsim.py
-GRHSIM_DRIVER ?= ../../wolvrix/build/bin/hdlbits-grhsim-driver
 
 BUILD_DIR := build
 COVERAGE_ROOT := coverage
@@ -59,8 +58,8 @@ check_grhtb_id:
 	@test -f $(DUT_SRC) || { echo "Missing DUT source: $(DUT_SRC)"; exit 1; }
 	@test -f $(GRHTB_SRC) || { echo "Missing GrhSIM testbench: $(GRHTB_SRC)"; exit 1; }
 
-$(GRHSIM_LIB): $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) $(GRHSIM_DRIVER) | check_grhtb_id $(GRHSIM_OUT_DIR)
-	WOLVRIX_HDLBITS_GRHSIM_DRIVER=$(GRHSIM_DRIVER) $(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR)
+$(GRHSIM_LIB): $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) | check_grhtb_id $(GRHSIM_OUT_DIR)
+	$(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR)
 	$(MAKE) -C $(GRHSIM_OUT_DIR)
 
 $(GRHSIM_BIN): $(GRHTB_SRC) $(GRHSIM_LIB) | $(GRHSIM_BUILD_SUBDIR)
