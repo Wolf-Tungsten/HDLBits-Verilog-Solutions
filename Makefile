@@ -1,11 +1,20 @@
+SHELL := /bin/bash
+
 VERILATOR ?= verilator
+CXX ?= c++
+PYTHON ?= python3
 # -Wno-fatal: do not treat warnings as errors (needed for vector logical ops etc.)
 VERILATOR_FLAGS ?= -Wall -Wno-DECLFILENAME --coverage -Wno-fatal
+CXXFLAGS ?= -std=c++20 -O2
 export CCACHE_DISABLE ?= 1
 DUT ?= 001
 TOP ?= top_module
 PREFIX ?= Vdut_$(DUT)
 MODEL := $(PREFIX)
+GRHSIM_TOP ?= $(TOP)
+GRHSIM_PREFIX := grhsim_$(GRHSIM_TOP)
+GRHSIM_SCRIPT ?= ../../scripts/wolvrix_hdlbits_grhsim.py
+GRHSIM_DRIVER ?= ../../wolvrix/build/bin/hdlbits-grhsim-driver
 
 BUILD_DIR := build
 COVERAGE_ROOT := coverage
@@ -14,22 +23,48 @@ DUT_SRC := dut/dut_$(DUT).v
 TB_SRC := tb/tb_$(DUT).cpp
 BUILD_SUBDIR := $(BUILD_DIR)/tb_$(DUT)
 BIN := $(BUILD_SUBDIR)/V$(TOP)
+GRHTB_SRC := grhtb/grhtb_$(DUT).cpp
+GRHSIM_BUILD_SUBDIR := $(BUILD_DIR)/grhtb_$(DUT)
+GRHSIM_OUT_DIR := $(GRHSIM_BUILD_SUBDIR)/$(GRHSIM_PREFIX)
+GRHSIM_LIB := $(GRHSIM_OUT_DIR)/lib$(GRHSIM_PREFIX).a
+GRHSIM_BIN := $(GRHSIM_BUILD_SUBDIR)/$(GRHSIM_PREFIX)_tb
 COV_DIR := $(COVERAGE_ROOT)/dut_$(DUT)
 COV_DAT := $(COV_DIR)/coverage.dat
 COV_INFO := $(COV_DIR)/coverage.info
 COV_ANNOTATE_DIR := $(COV_DIR)/annotate
 
-.PHONY: all run_tb clean coverage_report
+.PHONY: all run_tb run_grhtb clean coverage_report check_grhtb_id
 
 all: run_tb
 
 $(BUILD_SUBDIR):
 	@mkdir -p $@
 
+$(GRHSIM_BUILD_SUBDIR):
+	@mkdir -p $@
+
+$(GRHSIM_OUT_DIR):
+	@mkdir -p $@
+
 $(BIN): $(DUT_SRC) $(TB_SRC) $(LIB_SRCS) | $(BUILD_SUBDIR)
 	$(VERILATOR) $(VERILATOR_FLAGS) --cc $(DUT_SRC) $(LIB_SRCS) --exe ../../$(TB_SRC) \
 		--top-module $(TOP) --prefix $(PREFIX) -o V$(TOP) -Mdir $(BUILD_SUBDIR)
 	$(MAKE) -C $(BUILD_SUBDIR) -f $(MODEL).mk V$(TOP)
+
+check_grhtb_id:
+	@if [[ ! "$(DUT)" =~ ^[0-9]{3}$$ ]]; then \
+		echo "DUT must be a three-digit number (e.g. DUT=001)"; \
+		exit 1; \
+	fi
+	@test -f $(DUT_SRC) || { echo "Missing DUT source: $(DUT_SRC)"; exit 1; }
+	@test -f $(GRHTB_SRC) || { echo "Missing GrhSIM testbench: $(GRHTB_SRC)"; exit 1; }
+
+$(GRHSIM_LIB): $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) $(GRHSIM_DRIVER) | check_grhtb_id $(GRHSIM_OUT_DIR)
+	WOLVRIX_HDLBITS_GRHSIM_DRIVER=$(GRHSIM_DRIVER) $(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR)
+	$(MAKE) -C $(GRHSIM_OUT_DIR)
+
+$(GRHSIM_BIN): $(GRHTB_SRC) $(GRHSIM_LIB) | $(GRHSIM_BUILD_SUBDIR)
+	$(CXX) $(CXXFLAGS) -I$(GRHSIM_OUT_DIR) $(GRHTB_SRC) -L$(GRHSIM_OUT_DIR) -l$(GRHSIM_PREFIX) -o $(GRHSIM_BIN)
 
 run_tb: $(BIN)
 	@mkdir -p $(COV_DIR)
@@ -40,6 +75,10 @@ run_tb: $(BIN)
 		COV_DAT=$(COV_DAT) \
 		COV_INFO=$(COV_INFO) \
 		COV_ANNOTATE_DIR=$(COV_ANNOTATE_DIR)
+
+run_grhtb: $(GRHSIM_BIN)
+	@echo "[RUN] DUT=$(DUT) GRHSIM"
+	$(GRHSIM_BIN)
 
 coverage_report:
 	@if [ -z "$(COV_DAT)" ] || [ -z "$(COV_INFO)" ] || [ -z "$(COV_ANNOTATE_DIR)" ]; then \
