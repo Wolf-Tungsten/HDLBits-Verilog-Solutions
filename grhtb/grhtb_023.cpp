@@ -6,9 +6,9 @@
 
 static void tick(GrhSIM_top_module &sim)
 {
-    sim.clk = false;
-    sim.eval();
     sim.clk = true;
+    sim.eval();
+    sim.clk = false;
     sim.eval();
 }
 
