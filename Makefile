@@ -61,6 +61,10 @@ check_grhtb_id:
 $(GRHSIM_LIB): $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) | check_grhtb_id $(GRHSIM_OUT_DIR)
 	$(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR)
 	$(MAKE) -C $(GRHSIM_OUT_DIR)
+	@ACTUAL_LIB="$$(sed -n 's/^LIB := //p' $(GRHSIM_OUT_DIR)/Makefile)"; \
+	if [ -n "$$ACTUAL_LIB" ] && [ "$$ACTUAL_LIB" != "lib$(GRHSIM_PREFIX).a" ] && [ -f "$(GRHSIM_OUT_DIR)/$$ACTUAL_LIB" ]; then \
+		cp -f "$(GRHSIM_OUT_DIR)/$$ACTUAL_LIB" "$(GRHSIM_LIB)"; \
+	fi
 
 $(GRHSIM_BIN): $(GRHTB_SRC) $(GRHSIM_LIB) | $(GRHSIM_BUILD_SUBDIR)
 	$(CXX) $(CXXFLAGS) -I$(GRHSIM_OUT_DIR) $(GRHTB_SRC) -L$(GRHSIM_OUT_DIR) -l$(GRHSIM_PREFIX) -o $(GRHSIM_BIN)

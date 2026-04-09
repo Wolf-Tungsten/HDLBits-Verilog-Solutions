@@ -10,18 +10,11 @@ struct Stimulus_030 {
     bool b;
 };
 
-static void tick(GrhSIM_top_module &sim)
-{
-    sim.clk = true;
-    sim.eval();
-    sim.clk = false;
-    sim.eval();
-}
-
 int main()
 {
     GrhSIM_top_module sim;
     sim.init();
+    sim.clk = false;
 
     const std::array<Stimulus_030, 5> stimuli{{
         {false, false},
@@ -46,13 +39,29 @@ int main()
             return EXIT_FAILURE;
         }
 
-        tick(sim);
-
-        if (sim.out_always_ff != comb) {
-            std::cerr << "[GrhTB] dut_030 ff mismatch: a=" << static_cast<int>(stim.a)
+        sim.clk = true;
+        sim.eval();
+        if (sim.out_assign != comb || sim.out_always_comb != comb || sim.out_always_ff != comb) {
+            std::cerr << "[GrhTB] dut_030 posedge mismatch: a=" << static_cast<int>(stim.a)
                       << ", b=" << static_cast<int>(stim.b)
-                      << ", expected ff=" << static_cast<int>(comb)
-                      << ", got " << static_cast<int>(sim.out_always_ff) << '\n';
+                      << ", expected comb/ff=" << static_cast<int>(comb)
+                      << "/" << static_cast<int>(comb)
+                      << ", got out_assign=" << static_cast<int>(sim.out_assign)
+                      << ", out_always_comb=" << static_cast<int>(sim.out_always_comb)
+                      << ", out_always_ff=" << static_cast<int>(sim.out_always_ff) << '\n';
+            return EXIT_FAILURE;
+        }
+
+        sim.clk = false;
+        sim.eval();
+        if (sim.out_assign != comb || sim.out_always_comb != comb || sim.out_always_ff != comb) {
+            std::cerr << "[GrhTB] dut_030 negedge mismatch: a=" << static_cast<int>(stim.a)
+                      << ", b=" << static_cast<int>(stim.b)
+                      << ", expected comb/ff=" << static_cast<int>(comb)
+                      << "/" << static_cast<int>(comb)
+                      << ", got out_assign=" << static_cast<int>(sim.out_assign)
+                      << ", out_always_comb=" << static_cast<int>(sim.out_always_comb)
+                      << ", out_always_ff=" << static_cast<int>(sim.out_always_ff) << '\n';
             return EXIT_FAILURE;
         }
     }

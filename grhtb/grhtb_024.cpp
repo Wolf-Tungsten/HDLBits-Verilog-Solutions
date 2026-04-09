@@ -10,18 +10,11 @@ struct Stimulus_024 {
     std::uint8_t sel;
 };
 
-static void tick(GrhSIM_top_module &sim)
-{
-    sim.clk = true;
-    sim.eval();
-    sim.clk = false;
-    sim.eval();
-}
-
 int main()
 {
     GrhSIM_top_module sim;
     sim.init();
+    sim.clk = false;
 
     const std::array<Stimulus_024, 12> stimuli{{
         {0x00u, 0u},
@@ -44,7 +37,6 @@ int main()
     for (const auto &stim : stimuli) {
         sim.d = stim.d;
         sim.sel = stim.sel & 0x3u;
-        tick(sim);
 
         const std::uint8_t next_w1 = stim.d;
         const std::uint8_t next_w2 = w1;
@@ -66,8 +58,20 @@ int main()
             break;
         }
 
+        sim.clk = true;
+        sim.eval();
         if ((sim.q & 0xFFu) != expected_q) {
-            std::cerr << "[GrhTB] dut_024 failed: d=0x" << std::hex << static_cast<int>(stim.d)
+            std::cerr << "[GrhTB] dut_024 failed(posedge): d=0x" << std::hex << static_cast<int>(stim.d)
+                      << ", sel=" << std::dec << static_cast<int>(stim.sel)
+                      << ", expected q=0x" << std::hex << static_cast<int>(expected_q)
+                      << ", got 0x" << static_cast<int>(sim.q & 0xFFu) << std::dec << '\n';
+            return EXIT_FAILURE;
+        }
+
+        sim.clk = false;
+        sim.eval();
+        if ((sim.q & 0xFFu) != expected_q) {
+            std::cerr << "[GrhTB] dut_024 failed(negedge): d=0x" << std::hex << static_cast<int>(stim.d)
                       << ", sel=" << std::dec << static_cast<int>(stim.sel)
                       << ", expected q=0x" << std::hex << static_cast<int>(expected_q)
                       << ", got 0x" << static_cast<int>(sim.q & 0xFFu) << std::dec << '\n';
