@@ -32,7 +32,7 @@ COV_DAT := $(COV_DIR)/coverage.dat
 COV_INFO := $(COV_DIR)/coverage.info
 COV_ANNOTATE_DIR := $(COV_DIR)/annotate
 
-.PHONY: all run_tb run_grhtb clean coverage_report check_grhtb_id
+.PHONY: all run_tb run_grhtb clean coverage_report check_grhtb_id force_grhsim_emit
 
 all: run_tb
 
@@ -58,7 +58,11 @@ check_grhtb_id:
 	@test -f $(DUT_SRC) || { echo "Missing DUT source: $(DUT_SRC)"; exit 1; }
 	@test -f $(GRHTB_SRC) || { echo "Missing GrhSIM testbench: $(GRHTB_SRC)"; exit 1; }
 
-$(GRHSIM_LIB): $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) | check_grhtb_id $(GRHSIM_OUT_DIR)
+# Always re-emit GrhSIM code so the current py_install'ed wolvrix is reflected
+# even when the DUT/TB/script paths themselves are unchanged.
+force_grhsim_emit:
+
+$(GRHSIM_LIB): force_grhsim_emit $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) | check_grhtb_id $(GRHSIM_OUT_DIR)
 	$(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR)
 	$(MAKE) -C $(GRHSIM_OUT_DIR)
 	@ACTUAL_LIB="$$(sed -n 's/^LIB := //p' $(GRHSIM_OUT_DIR)/Makefile)"; \
