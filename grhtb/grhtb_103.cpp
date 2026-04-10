@@ -41,7 +41,7 @@ int main()
         }
 
         const bool cEnableModel = stim.enable;
-        const bool cLoadModel = stim.reset || ((qPrev == 12u) && stim.enable);
+        const bool cLoadModel = stim.reset || ((qModel == 12u) && stim.enable);
         const std::uint8_t cDModel = cLoadModel ? 1u : 0u;
 
         if ((sim.Q & 0xFu) != qModel || sim.c_enable != cEnableModel || sim.c_load != cLoadModel ||
