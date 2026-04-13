@@ -27,6 +27,8 @@ GRHSIM_BUILD_SUBDIR := $(BUILD_DIR)/grhtb_$(DUT)
 GRHSIM_OUT_DIR := $(GRHSIM_BUILD_SUBDIR)/$(GRHSIM_PREFIX)
 GRHSIM_LIB := $(GRHSIM_OUT_DIR)/lib$(GRHSIM_PREFIX).a
 GRHSIM_BIN := $(GRHSIM_BUILD_SUBDIR)/$(GRHSIM_PREFIX)_tb
+LIBFST_INCLUDE ?= ../../wolvrix/external/libfst/src
+WOLVRIX_GRHSIM_WAVEFORM ?= 0
 COV_DIR := $(COVERAGE_ROOT)/dut_$(DUT)
 COV_DAT := $(COV_DIR)/coverage.dat
 COV_INFO := $(COV_DIR)/coverage.info
@@ -63,7 +65,7 @@ check_grhtb_id:
 force_grhsim_emit:
 
 $(GRHSIM_LIB): force_grhsim_emit $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) | check_grhtb_id $(GRHSIM_OUT_DIR)
-	$(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR)
+	$(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR) --waveform $(if $(filter 1,$(WOLVRIX_GRHSIM_WAVEFORM)),declared-symbols,off)
 	$(MAKE) -C $(GRHSIM_OUT_DIR)
 	@ACTUAL_LIB="$$(sed -n 's/^LIB := //p' $(GRHSIM_OUT_DIR)/Makefile)"; \
 	if [ -n "$$ACTUAL_LIB" ] && [ "$$ACTUAL_LIB" != "lib$(GRHSIM_PREFIX).a" ] && [ -f "$(GRHSIM_OUT_DIR)/$$ACTUAL_LIB" ]; then \
@@ -71,7 +73,7 @@ $(GRHSIM_LIB): force_grhsim_emit $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) | chec
 	fi
 
 $(GRHSIM_BIN): $(GRHTB_SRC) $(GRHSIM_LIB) | $(GRHSIM_BUILD_SUBDIR)
-	$(CXX) $(CXXFLAGS) -I$(GRHSIM_OUT_DIR) $(GRHTB_SRC) -L$(GRHSIM_OUT_DIR) -l$(GRHSIM_PREFIX) -o $(GRHSIM_BIN)
+	$(CXX) $(CXXFLAGS) -I$(GRHSIM_OUT_DIR) -I$(LIBFST_INCLUDE) $(GRHTB_SRC) -L$(GRHSIM_OUT_DIR) -l$(GRHSIM_PREFIX) -lz -o $(GRHSIM_BIN)
 
 run_tb: $(BIN)
 	@mkdir -p $(COV_DIR)
