@@ -14,6 +14,7 @@ MODEL := $(PREFIX)
 GRHSIM_TOP ?= $(TOP)
 GRHSIM_PREFIX := grhsim_$(GRHSIM_TOP)
 GRHSIM_SCRIPT ?= ../../scripts/wolvrix_hdlbits_grhsim.py
+GRHSIM_BACKEND ?= legacy
 
 BUILD_DIR := build
 COVERAGE_ROOT := coverage
@@ -66,7 +67,7 @@ check_grhtb_id:
 force_grhsim_emit:
 
 $(GRHSIM_LIB): force_grhsim_emit $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) | check_grhtb_id $(GRHSIM_OUT_DIR)
-	$(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR) --waveform $(if $(filter 1,$(WOLVRIX_GRHSIM_WAVEFORM)),declared-symbols,off) --perf $(if $(filter 1,$(WOLVRIX_GRHSIM_PERF)),eval,off)
+	$(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR) --backend $(GRHSIM_BACKEND) --waveform $(if $(filter 1,$(WOLVRIX_GRHSIM_WAVEFORM)),declared-symbols,off) --perf $(if $(filter 1,$(WOLVRIX_GRHSIM_PERF)),eval,off)
 	$(MAKE) -C $(GRHSIM_OUT_DIR)
 	@ACTUAL_LIB="$$(sed -n 's/^LIB := //p' $(GRHSIM_OUT_DIR)/Makefile)"; \
 	if [ -n "$$ACTUAL_LIB" ] && [ "$$ACTUAL_LIB" != "lib$(GRHSIM_PREFIX).a" ] && [ -f "$(GRHSIM_OUT_DIR)/$$ACTUAL_LIB" ]; then \
