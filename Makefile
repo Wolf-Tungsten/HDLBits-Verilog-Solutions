@@ -36,7 +36,7 @@ COV_DAT := $(COV_DIR)/coverage.dat
 COV_INFO := $(COV_DIR)/coverage.info
 COV_ANNOTATE_DIR := $(COV_DIR)/annotate
 
-.PHONY: all run_tb run_grhtb clean coverage_report check_grhtb_id force_grhsim_emit
+.PHONY: all run_tb run_grhtb run_grhtb_trace run_grhtb_trace_check clean coverage_report check_grhtb_id force_grhsim_emit
 
 all: run_tb
 
@@ -67,6 +67,7 @@ check_grhtb_id:
 force_grhsim_emit:
 
 $(GRHSIM_LIB): force_grhsim_emit $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) | check_grhtb_id $(GRHSIM_OUT_DIR)
+	@if [ "$(GRHSIM_BACKEND)" = "ir" ]; then rm -rf "$(GRHSIM_OUT_DIR)"; mkdir -p "$(GRHSIM_OUT_DIR)"; fi
 	$(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR) --backend $(GRHSIM_BACKEND) --waveform $(if $(filter 1,$(WOLVRIX_GRHSIM_WAVEFORM)),declared-symbols,off) --perf $(if $(filter 1,$(WOLVRIX_GRHSIM_PERF)),eval,off)
 	$(MAKE) -C $(GRHSIM_OUT_DIR)
 	@ACTUAL_LIB="$$(sed -n 's/^LIB := //p' $(GRHSIM_OUT_DIR)/Makefile)"; \
@@ -90,6 +91,53 @@ run_tb: $(BIN)
 run_grhtb: $(GRHSIM_BIN)
 	@echo "[RUN] DUT=$(DUT) GRHSIM"
 	$(GRHSIM_BIN)
+
+# ---------------------------------------------------------------------------
+# Golden trace capture (sim-model refactor M0). IR backend only: wraps the
+# grhtb testbench with a per-eval trace shim (scripts/gen_grhsim_ir_trace_shim.py),
+# runs it twice and requires byte-identical traces before publishing the golden.
+# ---------------------------------------------------------------------------
+TRACE_CLASS := GrhSIM_$(GRHSIM_TOP)
+TRACE_SHIM := $(GRHSIM_BUILD_SUBDIR)/grhsim_trace_shim.hpp
+TRACE_RUN1 := $(GRHSIM_BUILD_SUBDIR)/trace_run1.txt
+TRACE_RUN2 := $(GRHSIM_BUILD_SUBDIR)/trace_run2.txt
+TRACE_BIN := $(GRHSIM_BIN)_trace
+GOLDEN_DIR ?= ../../ptmp/sim-refactor-baseline/hdlbits
+
+$(TRACE_SHIM): $(GRHSIM_LIB)
+	$(PYTHON) ../../scripts/gen_grhsim_ir_trace_shim.py \
+		--header $(GRHSIM_OUT_DIR)/$(GRHSIM_PREFIX).hpp \
+		--class-name $(TRACE_CLASS) \
+		--include $(GRHSIM_PREFIX).hpp \
+		--macro-name $(TRACE_CLASS) \
+		--traced-name $(TRACE_CLASS)Traced \
+		--output $@
+
+$(TRACE_BIN): $(GRHTB_SRC) $(GRHSIM_LIB) $(TRACE_SHIM) | $(GRHSIM_BUILD_SUBDIR)
+	$(CXX) $(CXXFLAGS) -D$(TRACE_CLASS)=$(TRACE_CLASS)Traced \
+		-include $(abspath $(TRACE_SHIM)) \
+		-I$(GRHSIM_OUT_DIR) -I$(LIBFST_INCLUDE) $(GRHTB_SRC) \
+		-L$(GRHSIM_OUT_DIR) -l$(GRHSIM_PREFIX) -lz -o $@
+
+run_grhtb_trace: $(TRACE_BIN)
+	@if [ "$(GRHSIM_BACKEND)" != "ir" ]; then \
+		echo "run_grhtb_trace requires GRHSIM_BACKEND=ir (got $(GRHSIM_BACKEND))"; \
+		exit 1; \
+	fi
+	@mkdir -p $(GOLDEN_DIR)
+	GRHSIM_TRACE_PATH=$(abspath $(TRACE_RUN1)) $(TRACE_BIN) > $(GRHSIM_BUILD_SUBDIR)/trace_run1.log 2>&1
+	GRHSIM_TRACE_PATH=$(abspath $(TRACE_RUN2)) $(TRACE_BIN) > $(GRHSIM_BUILD_SUBDIR)/trace_run2.log 2>&1
+	cmp $(TRACE_RUN1) $(TRACE_RUN2)
+	cp $(TRACE_RUN1) $(GOLDEN_DIR)/dut_$(DUT).trace
+	@echo "[GOLDEN] DUT=$(DUT) -> $(GOLDEN_DIR)/dut_$(DUT).trace"
+
+run_grhtb_trace_check: $(TRACE_BIN)
+	@if [ "$(GRHSIM_BACKEND)" != "ir" ]; then \
+		echo "run_grhtb_trace_check requires GRHSIM_BACKEND=ir (got $(GRHSIM_BACKEND))"; \
+		exit 1; \
+	fi
+	GRHSIM_TRACE_PATH=$(abspath $(TRACE_RUN1)) $(TRACE_BIN) > $(GRHSIM_BUILD_SUBDIR)/trace_check.log 2>&1
+	$(PYTHON) ../../scripts/grhsim_ir_trace_diff.py $(GOLDEN_DIR)/dut_$(DUT).trace $(TRACE_RUN1)
 
 coverage_report:
 	@if [ -z "$(COV_DAT)" ] || [ -z "$(COV_INFO)" ] || [ -z "$(COV_ANNOTATE_DIR)" ]; then \
