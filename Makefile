@@ -14,7 +14,7 @@ MODEL := $(PREFIX)
 GRHSIM_TOP ?= $(TOP)
 GRHSIM_PREFIX := grhsim_$(GRHSIM_TOP)
 GRHSIM_SCRIPT ?= ../../scripts/wolvrix_hdlbits_grhsim.py
-GRHSIM_BACKEND ?= legacy
+GRHSIM_BACKEND ?= ir
 
 BUILD_DIR := build
 COVERAGE_ROOT := coverage
