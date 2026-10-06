@@ -1,7 +1,12 @@
 SHELL := /bin/bash
 
 VERILATOR ?= verilator
-CXX ?= c++
+# grhsim-generated models require C23 _BitInt (wide values): prefer clang.
+# ?= would not override make's built-in CXX=g++ default; replace only the
+# default origin so an env or command-line CXX still wins.
+ifeq ($(origin CXX),default)
+CXX := $(shell command -v clang++ || echo c++)
+endif
 PYTHON ?= python3
 # -Wno-fatal: do not treat warnings as errors (needed for vector logical ops etc.)
 VERILATOR_FLAGS ?= -Wall -Wno-DECLFILENAME --coverage -Wno-fatal

@@ -1,21 +1,19 @@
-#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
 
 #include "grhsim_top_module.hpp"
 
-static void set_u100(std::array<std::uint64_t, 2> &dst, std::uint64_t low64, std::uint64_t high36)
+using Wide100 = unsigned _BitInt(128);
+
+static void set_u100(Wide100 &dst, std::uint64_t low64, std::uint64_t high36)
 {
-    dst[0] = low64;
-    dst[1] = high36 & 0xFFFFFFFFFull;
+    dst = (static_cast<Wide100>(high36 & 0xFFFFFFFFFull) << 64) | static_cast<Wide100>(low64);
 }
 
-static std::uint8_t get_bit_u100(const std::array<std::uint64_t, 2> &src, int bit)
+static std::uint8_t get_bit_u100(const Wide100 &src, int bit)
 {
-    const std::size_t word = static_cast<std::size_t>(bit) >> 6;
-    const std::size_t offset = static_cast<std::size_t>(bit) & 63u;
-    return static_cast<std::uint8_t>((src[word] >> offset) & 1u);
+    return static_cast<std::uint8_t>((src >> bit) & 1);
 }
 
 static void set_bit_pair(std::uint64_t &low64, std::uint64_t &high36, int bit, bool value)

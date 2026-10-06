@@ -1,6 +1,7 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 
 #include "grhsim_top_module.hpp"
@@ -36,14 +37,9 @@ static Packed512 step_rule(const Packed512 &cur)
     return next;
 }
 
-static bool same_bits(const Packed512 &lhs, const Packed512 &rhs)
+static bool same_bits(const unsigned _BitInt(512) &lhs, const Packed512 &rhs)
 {
-    for (std::size_t i = 0; i < lhs.size(); ++i) {
-        if (lhs[i] != rhs[i]) {
-            return false;
-        }
-    }
-    return true;
+    return std::memcmp(&lhs, rhs.data(), sizeof(rhs)) == 0;
 }
 
 int main()
@@ -54,7 +50,7 @@ int main()
     sim.load = true;
     Packed512 qModel{};
     set_pattern(qModel);
-    sim.data = qModel;
+    std::memcpy(&sim.data, qModel.data(), sizeof(qModel));
     sim.eval();
 
     sim.clk = true;

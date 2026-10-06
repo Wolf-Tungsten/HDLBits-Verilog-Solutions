@@ -6,9 +6,7 @@
 
 static void zero_u256(GrhSIM_top_module &sim)
 {
-    for (int word = 0; word < 4; ++word) {
-        sim.in[word] = 0;
-    }
+    sim.in = 0;
 }
 
 int main()
@@ -17,8 +15,6 @@ int main()
     sim.init();
 
     for (int sel = 0; sel < 256; ++sel) {
-        const int word = sel >> 6;
-        const int bit = sel & 63;
         for (int rep = 0; rep < 2; ++rep) {
             zero_u256(sim);
             sim.sel = static_cast<std::uint8_t>(sel);
@@ -27,13 +23,13 @@ int main()
                 return EXIT_FAILURE;
             }
 
-            sim.in[word] |= (UINT64_C(1) << bit);
+            sim.in |= (unsigned _BitInt(256))1 << sel;
             sim.eval();
             if (sim.out != 1) {
                 return EXIT_FAILURE;
             }
 
-            sim.in[word] &= ~(UINT64_C(1) << bit);
+            sim.in &= ~((unsigned _BitInt(256))1 << sel);
             sim.eval();
             if (sim.out != 0) {
                 return EXIT_FAILURE;

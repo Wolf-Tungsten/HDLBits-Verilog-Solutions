@@ -7,8 +7,7 @@
 
 static void set_u100(GrhSIM_top_module &sim, std::uint64_t low64, std::uint64_t high36)
 {
-    sim.in[0] = low64;
-    sim.in[1] = high36 & 0xFFFFFFFFFull;
+    sim.in = ((unsigned _BitInt(128))(high36 & 0xFFFFFFFFFull) << 64) | (unsigned _BitInt(128))low64;
 }
 
 static void reverse_u100(std::uint64_t inLo, std::uint64_t inHi36, std::uint64_t &outLo, std::uint64_t &outHi36)
@@ -48,7 +47,7 @@ int main()
         std::uint64_t expectedLo = 0;
         std::uint64_t expectedHi = 0;
         reverse_u100(v.lo, v.hi36, expectedLo, expectedHi);
-        if (sim.out[0] != expectedLo || (sim.out[1] & 0xFFFFFFFFFull) != expectedHi) {
+        if ((std::uint64_t)(sim.out) != expectedLo || ((std::uint64_t)(sim.out >> 64) & 0xFFFFFFFFFull) != expectedHi) {
             std::cerr << "[GrhTB] dut_040 failed: expected reversed 100-bit value\n";
             return EXIT_FAILURE;
         }
@@ -58,7 +57,7 @@ int main()
     std::uint64_t hi = 0;
     set_u100(sim, lo, hi);
     sim.eval();
-    if (sim.out[0] != 0 || (sim.out[1] & 0xFFFFFFFFFull) != 0) {
+    if ((std::uint64_t)(sim.out) != 0 || ((std::uint64_t)(sim.out >> 64) & 0xFFFFFFFFFull) != 0) {
         std::cerr << "[GrhTB] dut_040 failed: initial zero mismatch\n";
         return EXIT_FAILURE;
     }
@@ -75,7 +74,7 @@ int main()
             std::uint64_t expectedLo = 0;
             std::uint64_t expectedHi = 0;
             reverse_u100(lo, hi, expectedLo, expectedHi);
-            if (sim.out[0] != expectedLo || (sim.out[1] & 0xFFFFFFFFFull) != expectedHi) {
+            if ((std::uint64_t)(sim.out) != expectedLo || ((std::uint64_t)(sim.out >> 64) & 0xFFFFFFFFFull) != expectedHi) {
                 return EXIT_FAILURE;
             }
 
@@ -87,7 +86,7 @@ int main()
             set_u100(sim, lo, hi);
             sim.eval();
             reverse_u100(lo, hi, expectedLo, expectedHi);
-            if (sim.out[0] != expectedLo || (sim.out[1] & 0xFFFFFFFFFull) != expectedHi) {
+            if ((std::uint64_t)(sim.out) != expectedLo || ((std::uint64_t)(sim.out >> 64) & 0xFFFFFFFFFull) != expectedHi) {
                 return EXIT_FAILURE;
             }
         }

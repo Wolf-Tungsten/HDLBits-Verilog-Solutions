@@ -6,21 +6,15 @@
 
 static void clear_u255(GrhSIM_top_module &sim)
 {
-    sim.in[0] = 0;
-    sim.in[1] = 0;
-    sim.in[2] = 0;
-    sim.in[3] = 0;
+    sim.in = 0;
 }
 
 static void set_bit_u255(GrhSIM_top_module &sim, int bit, bool value)
 {
-    const std::size_t word = static_cast<std::size_t>(bit) >> 6;
-    const std::size_t offset = static_cast<std::size_t>(bit) & 63u;
-    const std::uint64_t mask = UINT64_C(1) << offset;
     if (value) {
-        sim.in[word] |= mask;
+        sim.in |= (unsigned _BitInt(256))1 << bit;
     } else {
-        sim.in[word] &= ~mask;
+        sim.in &= ~((unsigned _BitInt(256))1 << bit);
     }
 }
 

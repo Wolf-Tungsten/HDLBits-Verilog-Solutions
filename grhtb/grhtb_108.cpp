@@ -5,19 +5,16 @@
 
 #include "grhsim_top_module.hpp"
 
-using Packed100 = std::array<std::uint64_t, 2>;
+using Wide100 = unsigned _BitInt(128);
 
-static void set_u100(Packed100 &dst, std::uint64_t low64, std::uint64_t high36)
+static void set_u100(Wide100 &dst, std::uint64_t low64, std::uint64_t high36)
 {
-    dst[0] = low64;
-    dst[1] = high36 & 0xFFFFFFFFFull;
+    dst = (static_cast<Wide100>(high36 & 0xFFFFFFFFFull) << 64) | static_cast<Wide100>(low64);
 }
 
-static std::uint8_t get_bit_u100(const Packed100 &src, int bit)
+static std::uint8_t get_bit_u100(const Wide100 &src, int bit)
 {
-    const std::size_t word = static_cast<std::size_t>(bit) >> 6;
-    const std::size_t offset = static_cast<std::size_t>(bit) & 63u;
-    return static_cast<std::uint8_t>((src[word] >> offset) & 1u);
+    return static_cast<std::uint8_t>((src >> bit) & 1);
 }
 
 static void rotate_right1(std::uint64_t &low64, std::uint64_t &high36)
@@ -71,7 +68,8 @@ int main()
             rotate_left1(low64, high36);
         }
 
-        const Packed100 expected = {low64, high36 & 0xFFFFFFFFFull};
+        Wide100 expected;
+        set_u100(expected, low64, high36);
         for (int bit = 0; bit < 100; ++bit) {
             if (get_bit_u100(sim.q, bit) != get_bit_u100(expected, bit)) {
                 std::cerr << "[GrhTB] dut_108 failed(posedge) at bit " << bit << '\n';

@@ -7,8 +7,7 @@
 
 static void set_u100(GrhSIM_top_module &sim, std::uint64_t low64, std::uint64_t high36)
 {
-    sim.in[0] = low64;
-    sim.in[1] = (high36 & 0xFFFFFFFFFull);
+    sim.in = ((unsigned _BitInt(128))(high36 & 0xFFFFFFFFFull) << 64) | (unsigned _BitInt(128))low64;
 }
 
 static unsigned popcnt64(std::uint64_t x)

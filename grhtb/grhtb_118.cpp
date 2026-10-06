@@ -1,6 +1,7 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 
 #include "grhsim_top_module.hpp"
@@ -56,14 +57,9 @@ static Packed256 step_life(const Packed256 &cur)
     return next;
 }
 
-static bool same_bits(const Packed256 &lhs, const Packed256 &rhs)
+static bool same_bits(const unsigned _BitInt(256) &lhs, const Packed256 &rhs)
 {
-    for (std::size_t i = 0; i < lhs.size(); ++i) {
-        if (lhs[i] != rhs[i]) {
-            return false;
-        }
-    }
-    return true;
+    return std::memcmp(&lhs, rhs.data(), sizeof(rhs)) == 0;
 }
 
 static std::uint32_t lfsr_next(std::uint32_t state)
@@ -80,7 +76,7 @@ int main()
     sim.load = true;
     Packed256 qModel{};
     set_pattern(qModel);
-    sim.data = qModel;
+    std::memcpy(&sim.data, qModel.data(), sizeof(qModel));
     sim.eval();
 
     sim.clk = true;
@@ -118,7 +114,7 @@ int main()
         Packed256 oneHot{};
         set_bit(oneHot, bit, true);
         sim.load = true;
-        sim.data = oneHot;
+        std::memcpy(&sim.data, oneHot.data(), sizeof(oneHot));
         sim.clk = true;
         sim.eval();
         if (!same_bits(sim.q, oneHot)) {
@@ -134,7 +130,7 @@ int main()
         }
 
         Packed256 zeros{};
-        sim.data = zeros;
+        std::memcpy(&sim.data, zeros.data(), sizeof(zeros));
         sim.clk = true;
         sim.eval();
         if (!same_bits(sim.q, zeros)) {
@@ -160,7 +156,7 @@ int main()
         const Packed256 next = step_life(cur);
 
         sim.load = true;
-        sim.data = cur;
+        std::memcpy(&sim.data, cur.data(), sizeof(cur));
         sim.clk = true;
         sim.eval();
         if (!same_bits(sim.q, cur)) {

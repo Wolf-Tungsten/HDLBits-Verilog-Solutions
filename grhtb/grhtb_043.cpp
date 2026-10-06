@@ -1,6 +1,7 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 
 #include "grhsim_top_module.hpp"
@@ -48,14 +49,9 @@ static void bcd_add_100(const Packed400 &a,
     cout = carry != 0u;
 }
 
-static bool packed400_equal(const Packed400 &lhs, const Packed400 &rhs)
+static bool packed400_equal(const unsigned _BitInt(448) &lhs, const Packed400 &rhs)
 {
-    for (std::size_t i = 0; i < lhs.size(); ++i) {
-        if (lhs[i] != rhs[i]) {
-            return false;
-        }
-    }
-    return true;
+    return std::memcmp(&lhs, rhs.data(), sizeof(rhs)) == 0;
 }
 
 int main()
@@ -65,8 +61,8 @@ int main()
 
     const auto check = [&](const Packed400 &a, const Packed400 &b, bool cin, const char *ctx)
     {
-        sim.a = a;
-        sim.b = b;
+        std::memcpy(&sim.a, a.data(), sizeof(a));
+        std::memcpy(&sim.b, b.data(), sizeof(b));
         sim.cin = cin;
         sim.eval();
 

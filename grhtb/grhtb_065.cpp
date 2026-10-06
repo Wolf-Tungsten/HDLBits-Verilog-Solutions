@@ -6,18 +6,15 @@
 
 static void zero_u1024(GrhSIM_top_module &sim)
 {
-    for (int word = 0; word < 16; ++word) {
-        sim.in[word] = 0;
-    }
+    sim.in = 0;
 }
 
 static void set_nibble(GrhSIM_top_module &sim, int index, std::uint8_t value)
 {
     const int bit = 4 * index;
-    const int word = bit >> 6;
-    const int shift = bit & 63;
-    const std::uint64_t mask = UINT64_C(0xF) << shift;
-    sim.in[word] = (sim.in[word] & ~mask) | ((static_cast<std::uint64_t>(value & 0xFu)) << shift);
+    using Wide = unsigned _BitInt(1024);
+    const Wide mask = static_cast<Wide>(0xF) << bit;
+    sim.in = (sim.in & ~mask) | (static_cast<Wide>(value & 0xFu) << bit);
 }
 
 int main()
