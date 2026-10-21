@@ -17,7 +17,7 @@ static inline void tick(Vdut_118 *dut, VerilatedContext *ctx) {
     ctx->timeInc(1);
 }
 
-static inline uint8_t get_bit(const uint32_t *w, int bit) {
+template <typename W> static inline uint8_t get_bit(const W& w, int bit) {
     int wi = bit >> 5;
     int bi = bit & 31;
     return static_cast<uint8_t>((w[wi] >> bi) & 1u);

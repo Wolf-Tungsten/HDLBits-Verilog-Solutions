@@ -23,7 +23,7 @@ static inline void set_u100(Vdut_042* dut, uint64_t a_lo, uint64_t a_hi36,
     dut->cin = cin & 1u;
 }
 
-static inline uint32_t get_bit_u100(const uint32_t w[4], int bit) {
+template <typename W> static inline uint32_t get_bit_u100(const W& w, int bit) {
     const int widx = bit >> 5; const int b = bit & 31; return (w[widx] >> b) & 1u;
 }
 

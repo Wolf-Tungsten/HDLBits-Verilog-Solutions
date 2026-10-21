@@ -11,7 +11,7 @@
 static inline void wide_zero_400(Vdut_043* dut) {
     for (int i = 0; i < 13; ++i) { dut->a[i] = 0; dut->b[i] = 0; }
 }
-static inline void set_bcd_digit(uint32_t w[13], int digit, uint8_t val) {
+template <typename W> static inline void set_bcd_digit(W& w, int digit, uint8_t val) {
     const int bit = 4*digit;
     const int wi = bit >> 5; const int bi = bit & 31;
     uint32_t mask = 0xFu << bi;
@@ -23,7 +23,7 @@ static inline void set_bcd_digit(uint32_t w[13], int digit, uint8_t val) {
     }
 }
 
-static inline uint16_t get_low16(const uint32_t w[13]) { return static_cast<uint16_t>(w[0] & 0xFFFFu); }
+template <typename W> static inline uint16_t get_low16(const W& w) { return static_cast<uint16_t>(w[0] & 0xFFFFu); }
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);

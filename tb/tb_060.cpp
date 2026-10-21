@@ -14,11 +14,11 @@ static inline void set_u100(Vdut_060* d, uint64_t lo, uint64_t hi36){
     d->in[2] = static_cast<uint32_t>(hi36 & 0xFFFFFFFFull);
     d->in[3] = static_cast<uint32_t>((hi36 >> 32) & 0xFull);
 }
-static inline void get_u100(const uint32_t w[4], uint64_t &lo, uint64_t &hi36){
+template <typename W> static inline void get_u100(const W& w, uint64_t &lo, uint64_t &hi36){
     lo = (uint64_t(w[1])<<32) | uint64_t(w[0]);
     hi36 = (uint64_t(w[3]&0xFu)<<32) | uint64_t(w[2]);
 }
-static inline uint8_t get_bit(const uint32_t w[4], int bit){ int wi=bit>>5; int bi=bit&31; return (w[wi]>>bi)&1u; }
+template <typename W> static inline uint8_t get_bit(const W& w, int bit){ int wi=bit>>5; int bi=bit&31; return (w[wi]>>bi)&1u; }
 
 int main(int argc, char** argv){
     Verilated::commandArgs(argc, argv);

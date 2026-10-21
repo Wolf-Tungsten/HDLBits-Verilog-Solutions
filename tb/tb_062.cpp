@@ -12,7 +12,7 @@ static inline void set_u100(Vdut_062* d, uint64_t alo,uint64_t ahi36,uint64_t bl
     d->sel=sel&1u;
 }
 
-static inline uint8_t get_bit(const uint32_t w[4], int bit){ int wi=bit>>5, bi=bit&31; return (w[wi]>>bi)&1u; }
+template <typename W> static inline uint8_t get_bit(const W& w, int bit){ int wi=bit>>5, bi=bit&31; return (w[wi]>>bi)&1u; }
 
 int main(int argc,char**argv){
     Verilated::commandArgs(argc,argv);
