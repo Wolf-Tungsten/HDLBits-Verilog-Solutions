@@ -19,7 +19,6 @@ MODEL := $(PREFIX)
 GRHSIM_TOP ?= $(TOP)
 GRHSIM_PREFIX := grhsim_$(GRHSIM_TOP)
 GRHSIM_SCRIPT ?= ../../scripts/wolvrix_hdlbits_grhsim.py
-GRHSIM_BACKEND ?= ir
 
 BUILD_DIR := build
 COVERAGE_ROOT := coverage
@@ -36,6 +35,13 @@ GRHSIM_BIN := $(GRHSIM_BUILD_SUBDIR)/$(GRHSIM_PREFIX)_tb
 LIBFST_INCLUDE ?= ../../wolvrix/external/libfst/src
 WOLVRIX_GRHSIM_WAVEFORM ?= 0
 WOLVRIX_GRHSIM_PERF ?= 0
+# Per-supernode timing probes in generated grhsim model code (see
+# pdocs/grhsim-ir-module-attribution/). Consumed via CXXFLAGS so the model
+# library and the testbench compile with the same definition.
+WOLVRIX_GRHSIM_SN_TIMING ?= 0
+ifneq ($(strip $(WOLVRIX_GRHSIM_SN_TIMING)),0)
+CXXFLAGS += -DWOLVRIX_GRHSIM_SN_TIMING=$(WOLVRIX_GRHSIM_SN_TIMING)
+endif
 COV_DIR := $(COVERAGE_ROOT)/dut_$(DUT)
 COV_DAT := $(COV_DIR)/coverage.dat
 COV_INFO := $(COV_DIR)/coverage.info
@@ -72,8 +78,8 @@ check_grhtb_id:
 force_grhsim_emit:
 
 $(GRHSIM_LIB): force_grhsim_emit $(DUT_SRC) $(GRHTB_SRC) $(GRHSIM_SCRIPT) | check_grhtb_id $(GRHSIM_OUT_DIR)
-	@if [ "$(GRHSIM_BACKEND)" = "ir" ]; then rm -rf "$(GRHSIM_OUT_DIR)"; mkdir -p "$(GRHSIM_OUT_DIR)"; fi
-	$(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR) --backend $(GRHSIM_BACKEND) --waveform $(if $(filter 1,$(WOLVRIX_GRHSIM_WAVEFORM)),declared-symbols,off) --perf $(if $(filter 1,$(WOLVRIX_GRHSIM_PERF)),eval,off)
+	rm -rf "$(GRHSIM_OUT_DIR)" && mkdir -p "$(GRHSIM_OUT_DIR)"
+	$(PYTHON) $(GRHSIM_SCRIPT) $(DUT) $(GRHSIM_OUT_DIR) --waveform $(if $(filter 1,$(WOLVRIX_GRHSIM_WAVEFORM)),declared-symbols,off) --perf $(if $(filter 1,$(WOLVRIX_GRHSIM_PERF)),eval,off)
 	$(MAKE) -C $(GRHSIM_OUT_DIR)
 	@ACTUAL_LIB="$$(sed -n 's/^LIB := //p' $(GRHSIM_OUT_DIR)/Makefile)"; \
 	if [ -n "$$ACTUAL_LIB" ] && [ "$$ACTUAL_LIB" != "lib$(GRHSIM_PREFIX).a" ] && [ -f "$(GRHSIM_OUT_DIR)/$$ACTUAL_LIB" ]; then \
@@ -98,8 +104,8 @@ run_grhtb: $(GRHSIM_BIN)
 	$(GRHSIM_BIN)
 
 # ---------------------------------------------------------------------------
-# Golden trace capture (sim-model refactor M0). IR backend only: wraps the
-# grhtb testbench with a per-eval trace shim (scripts/gen_grhsim_ir_trace_shim.py),
+# Golden trace capture (sim-model refactor M0). Wrap the GrhSIM testbench with a
+# per-eval trace shim (scripts/gen_grhsim_ir_trace_shim.py),
 # runs it twice and requires byte-identical traces before publishing the golden.
 # ---------------------------------------------------------------------------
 TRACE_CLASS := GrhSIM_$(GRHSIM_TOP)
@@ -125,10 +131,6 @@ $(TRACE_BIN): $(GRHTB_SRC) $(GRHSIM_LIB) $(TRACE_SHIM) | $(GRHSIM_BUILD_SUBDIR)
 		-L$(GRHSIM_OUT_DIR) -l$(GRHSIM_PREFIX) -lz -o $@
 
 run_grhtb_trace: $(TRACE_BIN)
-	@if [ "$(GRHSIM_BACKEND)" != "ir" ]; then \
-		echo "run_grhtb_trace requires GRHSIM_BACKEND=ir (got $(GRHSIM_BACKEND))"; \
-		exit 1; \
-	fi
 	@mkdir -p $(GOLDEN_DIR)
 	GRHSIM_TRACE_PATH=$(abspath $(TRACE_RUN1)) $(TRACE_BIN) > $(GRHSIM_BUILD_SUBDIR)/trace_run1.log 2>&1
 	GRHSIM_TRACE_PATH=$(abspath $(TRACE_RUN2)) $(TRACE_BIN) > $(GRHSIM_BUILD_SUBDIR)/trace_run2.log 2>&1
@@ -137,10 +139,6 @@ run_grhtb_trace: $(TRACE_BIN)
 	@echo "[GOLDEN] DUT=$(DUT) -> $(GOLDEN_DIR)/dut_$(DUT).trace"
 
 run_grhtb_trace_check: $(TRACE_BIN)
-	@if [ "$(GRHSIM_BACKEND)" != "ir" ]; then \
-		echo "run_grhtb_trace_check requires GRHSIM_BACKEND=ir (got $(GRHSIM_BACKEND))"; \
-		exit 1; \
-	fi
 	GRHSIM_TRACE_PATH=$(abspath $(TRACE_RUN1)) $(TRACE_BIN) > $(GRHSIM_BUILD_SUBDIR)/trace_check.log 2>&1
 	$(PYTHON) ../../scripts/grhsim_ir_trace_diff.py $(GOLDEN_DIR)/dut_$(DUT).trace $(TRACE_RUN1)
 
