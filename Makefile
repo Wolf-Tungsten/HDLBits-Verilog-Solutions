@@ -36,7 +36,7 @@ LIBFST_INCLUDE ?= ../../wolvrix/external/libfst/src
 WOLVRIX_GRHSIM_WAVEFORM ?= 0
 WOLVRIX_GRHSIM_PERF ?= 0
 # Per-supernode timing probes in generated grhsim model code (see
-# pdocs/grhsim-ir-module-attribution/). Consumed via CXXFLAGS so the model
+# pdocs/grhsim.md section 6). Consumed via CXXFLAGS so the model
 # library and the testbench compile with the same definition.
 WOLVRIX_GRHSIM_SN_TIMING ?= 0
 ifneq ($(strip $(WOLVRIX_GRHSIM_SN_TIMING)),0)
